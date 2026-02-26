@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Weather Prediction System{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+    <p class="lead">Welcome back, {{ username }}! Here's your weather prediction overview.</p>
+</div>
+
+{% if not ml_loaded %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>Demo Mode:</strong> ML model files not found. Running with simulated predictions.
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-primary text-white">
+            <div class="stat-icon">
+                <i class="fas fa-cloud-sun"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="totalPredictions">-</h3>
+                <p>Total Predictions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-success text-white">
+            <div class="stat-icon">
+                <i class="fas fa-sun"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="sunnyCount">-</h3>
+                <p>Sunny Days</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-info text-white">
+            <div class="stat-icon">
+                <i class="fas fa-cloud-rain"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="rainyCount">-</h3>
+                <p>Rainy Days</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-secondary text-white">
+            <div class="stat-icon">
+                <i class="fas fa-cloud"></i>
+            </div>
+            <div class="stat-content">
+                <h3 id="cloudyCount">-</h3>
+                <p>Cloudy Days</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Prediction Statistics</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="predictionChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('prediction') }}" class="btn btn-primary w-100 mb-3">
+                    <i class="fas fa-bolt"></i> Make New Prediction
+                </a>
+                <a href="{{ url_for('clear_buffer') }}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-redo"></i> Reset Buffer
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list"></i> Recent Predictions</h5>
+    </div>
+    <div class="card-body">
+        {% if predictions %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Temperature (°C)</th>
+                        <th>Humidity (%)</th>
+                        <th>Prediction</th>
+                        <th>Action Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pred in predictions %}
+                    <tr>
+                        <td>{{ pred['created_at'] }}</td>
+                        <td>{{ pred['temperature'] }}</td>
+                        <td>{{ pred['humidity'] }}</td>
+                        <td>
+                            <span class="weather-badge {{ pred['predicted_weather'].lower() }}">
+                                {{ pred['predicted_weather'] }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if pred['predicted_weather'] == 'Sunny' %}
+                            <span class="badge bg-warning">Solar Charging</span>
+                            {% elif pred['predicted_weather'] == 'Rainy' %}
+                            <span class="badge bg-info">Protective Cover</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Standby Mode</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center text-muted">No predictions yet. <a href="{{ url_for('prediction') }}">Make your first prediction!</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch prediction statistics
+    fetch('/api/prediction_stats')
+        .then(response => response.json())
+        .then(data => {
+            updateStats(data.stats);
+            createChart(data.stats);
+        });
+
+    function updateStats(stats) {
+        let total = 0;
+        let sunny = 0, rainy = 0, cloudy = 0;
+
+        stats.forEach(stat => {
+            total += stat.count;
+            if (stat.predicted_weather === 'Sunny') sunny = stat.count;
+            if (stat.predicted_weather === 'Rainy') rainy = stat.count;
+            if (stat.predicted_weather === 'Cloudy') cloudy = stat.count;
+        });
+
+        document.getElementById('totalPredictions').textContent = total;
+        document.getElementById('sunnyCount').textContent = sunny;
+        document.getElementById('rainyCount').textContent = rainy;
+        document.getElementById('cloudyCount').textContent = cloudy;
+    }
+
+    function createChart(stats) {
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        const labels = stats.map(stat => stat.predicted_weather);
+        const data = stats.map(stat => stat.count);
+        const backgroundColors = stats.map(stat => {
+            if (stat.predicted_weather === 'Sunny') return '#ffc107';
+            if (stat.predicted_weather === 'Rainy') return '#0dcaf0';
+            return '#6c757d';
+        });
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Predictions',
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

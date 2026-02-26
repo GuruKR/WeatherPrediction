@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section text-center py-5">
+    <div class="container">
+        <h1 class="display-4 mb-4">🌤️ AI-Powered Weather Prediction</h1>
+        <p class="lead mb-4">Advanced LSTM-based system predicting weather conditions 2 hours ahead with automated response actions.</p>
+        
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="feature-card p-4 h-100">
+                    <i class="fas fa-brain fa-3x text-primary mb-3"></i>
+                    <h4>LSTM AI Model</h4>
+                    <p>Deep learning model trained on synthetic weather patterns for accurate 2-hour predictions</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-4 h-100">
+                    <i class="fas fa-bolt fa-3x text-warning mb-3"></i>
+                    <h4>Real-time Automation</h4>
+                    <p>Automatic system responses based on predicted weather conditions</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-4 h-100">
+                    <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                    <h4>Smart Analytics</h4>
+                    <p>Visualize predictions and track system performance over time</p>
+                </div>
+            </div>
+        </div>
+
+        {% if not session.user_id %}
+        <div class="cta-section">
+            <h3 class="mb-3">Ready to Predict Weather?</h3>
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-user-plus"></i> Get Started
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+        </div>
+        {% else %}
+        <div class="cta-section">
+            <h3 class="mb-3">Welcome back, {{ session.username }}!</h3>
+            <a href="{{ url_for('prediction') }}" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-bolt"></i> Make Prediction
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>How It Works</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-primary"></div>
+                    <div class="timeline-content">
+                        <h5>Data Collection</h5>
+                        <p>Collect current temperature and humidity readings</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-success"></div>
+                    <div class="timeline-content">
+                        <h5>LSTM Processing</h5>
+                        <p>AI model analyzes historical patterns using 5-time-step sequences</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-warning"></div>
+                    <div class="timeline-content">
+                        <h5>2-Hour Prediction</h5>
+                        <p>Predicts weather condition (Sunny, Rainy, Cloudy) for 2 hours ahead</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-info"></div>
+                    <div class="timeline-content">
+                        <h5>Automated Response</h5>
+                        <p>Triggers appropriate system actions based on prediction</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <h3>System Responses</h3>
+            <div class="response-cards">
+                <div class="response-card sunny mb-3">
+                    <i class="fas fa-sun"></i>
+                    <div>
+                        <h5>Sunny Prediction</h5>
+                        <p>Activates solar charging system for optimal energy generation</p>
+                    </div>
+                </div>
+                <div class="response-card rainy mb-3">
+                    <i class="fas fa-cloud-rain"></i>
+                    <div>
+                        <h5>Rainy Prediction</h5>
+                        <p>Turns ON protective cover system to prevent damage</p>
+                    </div>
+                </div>
+                <div class="response-card cloudy">
+                    <i class="fas fa-cloud"></i>
+                    <div>
+                        <h5>Cloudy Prediction</h5>
+                        <p>Maintains standby mode for energy conservation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

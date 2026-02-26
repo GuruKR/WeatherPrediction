@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Predict Weather - Weather Prediction System{% endblock %}
+
+{% block content %}
+<div class="prediction-header mb-4">
+    <h1><i class="fas fa-bolt"></i> Weather Prediction</h1>
+    <p class="lead">Enter current weather data to predict conditions 2 hours ahead.</p>
+</div>
+
+{% if not ml_loaded %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>Demo Mode:</strong> Using simulated predictions. For real predictions, ensure model files are available.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Input Current Weather Data</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="voltage" class="form-label">Current Voltage </label>
+                                <input type="number" step="0.1" value="{{vol}}" class="form-control" id="voltage" 
+                                       name="voltage" required placeholder="e.g., 25.5">
+                                <div class="form-text">Enter current temperature in Celsius</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="current" class="form-label">Current </label>
+                                <input type="number" step="0.1" value="{{cur}}" class="form-control" id="current" 
+                                       name="current" required placeholder="e.g., 25.5">
+                                <div class="form-text">Enter current </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="temperature" class="form-label">Current Temperature (°C)</label>
+                                <input type="number" step="0.1" value="{{temp}}" class="form-control" id="temperature" 
+                                       name="temperature" required placeholder="e.g., 25.5">
+                                <div class="form-text">Enter current temperature in Celsius</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="humidity" class="form-label">Current Humidity (%)</label>
+                                <input type="number" step="0.1" class="form-control" id="humidity" 
+                                       name="humidity" value="{{hum}}" required placeholder="e.g., 65.0">
+                                <div class="form-text">Enter current humidity percentage</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-bolt"></i> Predict Weather (2 Hours Ahead)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if prediction_result %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Prediction Result</h5>
+            </div>
+            <div class="card-body">
+                <div class="prediction-result text-center">
+                    <div class="weather-icon-large mb-3 {{ prediction_result.lower() }}">
+                        {% if prediction_result == 'Sunny' %}
+                        <i class="fas fa-sun"></i>
+                        {% elif prediction_result == 'Rainy' %}
+                        <i class="fas fa-cloud-rain"></i>
+                        {% else %}
+                        <i class="fas fa-cloud"></i>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-{{ 'warning' if prediction_result == 'Sunny' else 'info' if prediction_result == 'Rainy' else 'secondary' }}">
+                        {{ prediction_result }}
+                    </h3>
+                    <p class="lead">Weather condition predicted for 2 hours from now</p>
+                    
+                    {% if switching_operation %}
+                    <div class="alert alert-{{ 'warning' if prediction_result == 'Sunny' else 'info' if prediction_result == 'Rainy' else 'secondary' }} mt-3">
+                        <h6><i class="fas fa-cogs"></i> Automated System Response:</h6>
+                        <p class="mb-0">{{ switching_operation }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Historical Buffer</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">LSTM model uses last 5 readings for prediction:</p>
+                
+                <div class="buffer-display">
+                    {% for reading in buffer_data %}
+                    <div class="buffer-item {% if loop.index == buffer_data|length %}current{% endif %}">
+                        <div class="buffer-number">{{ loop.index }}</div>
+                        <div class="buffer-data">
+                            <small>Temp: {{ reading[0] }}°C</small><br>
+                            <small>Humidity: {{ reading[1] }}%</small>
+                        </div>
+                        {% if loop.index == buffer_data|length %}
+                        <div class="buffer-current-badge">Current</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    {% if buffer_data|length < 5 %}
+                    {% for i in range(buffer_data|length + 1, 6) %}
+                    <div class="buffer-item placeholder">
+                        <div class="buffer-number">{{ i }}</div>
+                        <div class="buffer-data">
+                            <small>Waiting for data...</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <div class="mt-3">
+                    <a href="{{ url_for('clear_buffer') }}" class="btn btn-outline-secondary btn-sm w-100">
+                        <i class="fas fa-redo"></i> Reset Buffer to Default
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> How It Works</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-database text-primary"></i>
+                        <strong>Data Collection:</strong> Current temperature & humidity
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-brain text-success"></i>
+                        <strong>LSTM Processing:</strong> 5-time-step sequence analysis
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-clock text-warning"></i>
+                        <strong>Prediction:</strong> Weather condition after 2 hours
+                    </li>
+                    <li>
+                        <i class="fas fa-robot text-info"></i>
+                        <strong>Automation:</strong> System response based on prediction
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
