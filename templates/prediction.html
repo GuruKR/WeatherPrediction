@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Predict Weather - WeatherAI{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #f3f6fb;
+        font-family: system-ui, sans-serif;
+    }
+
+    .prediction-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1f2933;
+    }
+
+    .prediction-header p {
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    /* Card styling */
+    .card {
+        border-radius: 18px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10);
+        overflow: visible !important; /* IMPORTANT FIX */
+    }
+
+    .card-header {
+        padding: 14px 20px;
+        font-weight: 600;
+    }
+
+    .card-header.bg-primary {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+
+    .card-header.bg-success {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+    }
+
+    .weather-icon-large {
+        font-size: 48px;
+    }
+
+    .buffer-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        border-radius: 12px;
+        background: #f8fafc;
+        margin-bottom: 8px;
+    }
+
+    .buffer-current-badge {
+        padding: 4px 8px;
+        background: #1d4ed8;
+        color: white;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    .btn-primary {
+        border-radius: 999px;
+        padding: 10px 16px;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border: none;
+    }
+
+    .btn-outline-secondary {
+        border-radius: 999px;
+    }
+</style>
+
+<div class="prediction-header mb-4">
+    <h1><i class="fas fa-bolt"></i> Weather Prediction</h1>
+    <p>Enter current weather data to predict conditions 2 hours ahead.</p>
+</div>
+
+<div class="row">
+    <!-- LEFT COLUMN -->
+    <div class="col-md-8">
+
+        <!-- INPUT FORM -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-cloud-upload-alt"></i> Input Current Weather Data
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Current Voltage</label>
+                            <input type="number" step="0.1" value="{{vol}}" name="voltage" required class="form-control">
+                            <small class="text-muted">Enter current voltage</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Current</label>
+                            <input type="number" step="0.1" value="{{cur}}" name="current" required class="form-control">
+                            <small class="text-muted">Enter current</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Temperature (°C)</label>
+                            <input type="number" step="0.1" value="{{temp}}" name="temperature" required class="form-control">
+                            <small class="text-muted">Enter temperature</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Humidity (%)</label>
+                            <input type="number" step="0.1" value="{{hum}}" name="humidity" required class="form-control">
+                            <small class="text-muted">Enter humidity</small>
+                        </div>
+
+                    </div>
+
+                    <button class="btn btn-primary btn-lg w-100">⚡ Predict Weather</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RESULT -->
+        {% if prediction_result %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-chart-line"></i> Prediction Result
+            </div>
+            <div class="card-body text-center">
+                
+                <div class="weather-icon-large mb-3">
+                    {% if prediction_result == 'Sunny' %}
+                        <i class="fas fa-sun text-warning"></i>
+                    {% elif prediction_result == 'Rainy' %}
+                        <i class="fas fa-cloud-rain text-info"></i>
+                    {% else %}
+                        <i class="fas fa-cloud text-secondary"></i>
+                    {% endif %}
+                </div>
+
+                <h3>{{ prediction_result }}</h3>
+                <p class="lead">Forecast 2 hours ahead</p>
+
+                {% if switching_operation %}
+                <div class="alert alert-info mt-3">
+                    <strong>Automation:</strong><br>{{ switching_operation }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-md-4">
+
+        <!-- HISTORICAL BUFFER -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-history"></i> Historical Buffer</div>
+            <div class="card-body">
+                {% for reading in buffer_data %}
+                <div class="buffer-item {% if loop.index == buffer_data|length %}current{% endif %}">
+                    <div class="buffer-number">{{ loop.index }}</div>
+                    <div>
+                        <small>Temp: {{ reading[0] }}°C</small><br>
+                        <small>Humidity: {{ reading[1] }}%</small>
+                    </div>
+
+                    {% if loop.index == buffer_data|length %}
+                    <div class="buffer-current-badge">Current</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <a href="{{ url_for('clear_buffer') }}" class="btn btn-outline-secondary btn-sm w-100 mt-2">
+                    Reset Buffer
+                </a>
+            </div>
+        </div>
+
+        <!-- 🔋 BATTERY STATUS DEMO (FIXED + BIG + ALWAYS VISIBLE) -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-battery-half"></i> Battery Status
+            </div>
+            <div class="card-body text-center">
+
+                <div style="display:flex; justify-content:center; align-items:center; margin-bottom:15px;">
+                    
+                    <!-- Battery Case -->
+                    <div id="batteryBox" style="
+                        width:130px;
+                        height:55px;
+                        border:4px solid #000;
+                        border-radius:10px;
+                        position:relative;
+                        background:white;
+                        overflow:visible;
+                    ">
+                        <div id="batteryFill" style="
+                            height:100%;
+                            width:60%;
+                            background:#16a34a;
+                            transition:0.4s ease;
+                        "></div>
+                    </div>
+
+                    <!-- Cap -->
+                    <div style="
+                        width:14px;
+                        height:28px;
+                        background:#000;
+                        border-radius:5px;
+                        margin-left:8px;
+                    "></div>
+
+                </div>
+
+                <h5 id="batteryStatusText">Charging (60%)</h5>
+                <p class="text-muted">Demo battery simulation</p>
+
+                <div class="d-flex gap-2 justify-content-center">
+                    <button class="btn btn-success btn-sm" onclick="setBatteryStatus(90, 'Charging')">Charging</button>
+                    <button class="btn btn-warning btn-sm" onclick="setBatteryStatus(40, 'Discharging')">Discharging</button>
+                    <button class="btn btn-primary btn-sm" onclick="setBatteryStatus(100, 'Full')">Full</button>
+                    <button class="btn btn-danger btn-sm" onclick="setBatteryStatus(15, 'Low Battery')">Low</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- HOW IT WORKS -->
+        <div class="card">
+            <div class="card-header"><i class="fas fa-info-circle"></i> How It Works</div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><b>Data:</b> Voltage, Current, Temp, Humidity</li>
+                    <li><b>LSTM:</b> 5-step sequence processing</li>
+                    <li><b>Predicts:</b> Weather 2 hours later</li>
+                    <li><b>Automation:</b> Controls system operations</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setBatteryStatus(level, status) {
+    const fill = document.getElementById("batteryFill");
+    const text = document.getElementById("batteryStatusText");
+
+    if (level < 5) level = 5; // always visible
+
+    fill.style.width = level + "%";
+
+    if (status === "Charging") fill.style.background = "#16a34a";
+    if (status === "Discharging") fill.style.background = "#f59e0b";
+    if (status === "Low Battery") fill.style.background = "#dc2626";
+    if (status === "Full") fill.style.background = "#2563eb";
+
+    text.textContent = `${status} (${level}%)`;
+}
+</script>
+{% endblock %}
