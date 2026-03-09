@@ -1,0 +1,271 @@
+:root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --danger-color: #dc3545;
+}
+
+/* General Styles */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    margin-top: 20px;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Timeline */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -30px;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+.timeline-content {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Response Cards */
+.response-cards .response-card {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.response-card.sunny {
+    border-left: 4px solid var(--warning-color);
+}
+
+.response-card.rainy {
+    border-left: 4px solid var(--info-color);
+}
+
+.response-card.cloudy {
+    border-left: 4px solid var(--secondary);
+}
+
+.response-card i {
+    font-size: 2rem;
+    margin-right: 15px;
+}
+
+.response-card.sunny i { color: var(--warning-color); }
+.response-card.rainy i { color: var(--info-color); }
+.response-card.cloudy i { color: var(--secondary); }
+
+/* Stat Cards */
+.stat-card {
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-right: 15px;
+    opacity: 0.8;
+}
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.stat-content p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Weather Badges */
+.weather-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.weather-badge.sunny {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.weather-badge.rainy {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.weather-badge.cloudy {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+/* Prediction Result */
+.weather-icon-large {
+    font-size: 4rem;
+}
+
+.weather-icon-large.sunny { color: var(--warning-color); }
+.weather-icon-large.rainy { color: var(--info-color); }
+.weather-icon-large.cloudy { color: var(--secondary); }
+
+/* Buffer Display */
+.buffer-display {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.buffer-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    position: relative;
+}
+
+.buffer-item.current {
+    background: #e7f1ff;
+    border-left-color: var(--info-color);
+}
+
+.buffer-item.placeholder {
+    opacity: 0.6;
+    border-left-color: #6c757d;
+}
+
+.buffer-number {
+    background: var(--primary-color);
+    color: white;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.buffer-item.current .buffer-number {
+    background: var(--info-color);
+}
+
+.buffer-current-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: var(--info-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #0056b3);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3, var(--primary-color));
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Footer */
+footer {
+    margin-top: 50px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-section {
+        margin-top: 10px;
+        padding: 30px 15px;
+    }
+    
+    .stat-card {
+        margin-bottom: 15px;
+    }
+    
+    .feature-card {
+        margin-bottom: 15px;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.5s ease-out;
+}

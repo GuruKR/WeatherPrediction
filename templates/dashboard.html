@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Weather Prediction System{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+    <p class="lead">Welcome back, {{ username }}! Here's your weather prediction overview.</p>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="small text-muted">Last updated: <span id="lastUpdated">—</span></div>
+    <div class="small text-muted" id="statsScopeLabel"></div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-primary text-white text-center">
+            <div class="stat-icon mb-2"><i class="fas fa-cloud-sun"></i></div>
+            <h3 id="totalPredictions">{{ total_count if total_count is defined else 0 }}</h3>
+            <p class="mb-0">Total Predictions</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-success text-white text-center">
+            <div class="stat-icon mb-2"><i class="fas fa-sun"></i></div>
+            <h3 id="sunnyCount">{{ sunny_count if sunny_count is defined else 0 }}</h3>
+            <p class="mb-0">Sunny Days</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-info text-white text-center">
+            <div class="stat-icon mb-2"><i class="fas fa-cloud-rain"></i></div>
+            <h3 id="rainyCount">{{ rainy_count if rainy_count is defined else 0 }}</h3>
+            <p class="mb-0">Rainy Days</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-secondary text-white text-center">
+            <div class="stat-icon mb-2"><i class="fas fa-cloud"></i></div>
+            <h3 id="cloudyCount">{{ cloudy_count if cloudy_count is defined else 0 }}</h3>
+            <p class="mb-0">Cloudy Days</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Prediction Statistics</h5>
+            </div>
+            <div class="card-body">
+                <form id="filters" class="row g-2 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label mb-1 small text-muted">Start date</label>
+                        <input type="date" class="form-control form-control-sm" id="filterStart">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label mb-1 small text-muted">End date</label>
+                        <input type="date" class="form-control form-control-sm" id="filterEnd">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label mb-1 small text-muted">User scope</label>
+                        <select class="form-select form-select-sm" id="filterUser">
+                            <option value="mine" selected>My predictions</option>
+                            <option value="all">All users</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100 btn-sm">Apply</button>
+                    </div>
+                </form>
+                <canvas id="predictionChart" width="400" height="200"></canvas>
+                <p id="statsStatus" class="text-muted small mt-2 mb-0"></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('prediction') }}" class="btn btn-primary w-100 mb-3">
+                    <i class="fas fa-bolt"></i> Make New Prediction
+                </a>
+                <a href="{{ url_for('clear_buffer') }}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-redo"></i> Reset Buffer
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list"></i> Recent Predictions</h5>
+    </div>
+    <div class="card-body">
+        {% if predictions %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Temperature (°C)</th>
+                        <th>Humidity (%)</th>
+                        <th>Prediction</th>
+                        <th>Action Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pred in predictions %}
+                    <tr>
+                        <td>{{ pred['created_at'] }}</td>
+                        <td>{{ pred['temperature'] }}</td>
+                        <td>{{ pred['humidity'] }}</td>
+                        <td>
+                            <span class="weather-badge {{ pred['predicted_weather'].lower() }}">
+                                {{ pred['predicted_weather'] }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if pred['predicted_weather'] == 'Sunny' %}
+                            <span class="badge bg-warning">Solar Charging</span>
+                            {% elif pred['predicted_weather'] == 'Rainy' %}
+                            <span class="badge bg-info">Protective Cover</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Standby Mode</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center text-muted">No predictions yet. <a href="{{ url_for('prediction') }}">Make your first prediction!</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// initialStats populated from server for immediate chart render
+const initialStats = {{ stats_list|tojson | safe }};
+let chartInstance = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // If server provided initial stats, draw chart immediately
+    if (Array.isArray(initialStats) && initialStats.length) {
+        updateStats(initialStats, false);
+        createChart(initialStats);
+    }
+
+    // Wire up filters
+    document.getElementById('filters').addEventListener('submit', function(e) {
+        e.preventDefault();
+        loadStatsAndTrend();
+    });
+
+    // Initial load
+    loadStatsAndTrend();
+
+    function updateStats(stats, isGlobal) {
+        let total = 0;
+        let sunny = 0, rainy = 0, cloudy = 0;
+
+        stats.forEach(stat => {
+            total += stat.count;
+            if (stat.predicted_weather === 'Sunny') sunny = stat.count;
+            if (stat.predicted_weather === 'Rainy') rainy = stat.count;
+            if (stat.predicted_weather === 'Cloudy') cloudy = stat.count;
+        });
+
+        document.getElementById('totalPredictions').textContent = total;
+        document.getElementById('sunnyCount').textContent = sunny;
+        document.getElementById('rainyCount').textContent = rainy;
+        document.getElementById('cloudyCount').textContent = cloudy;
+
+        const status = document.getElementById('statsStatus');
+        if (isGlobal) {
+            status.textContent = 'Showing global statistics (no personal predictions yet).';
+        } else {
+            status.textContent = total ? 'Showing your prediction statistics.' : 'No predictions yet — make one to see stats.';
+        }
+
+        const scopeLabel = document.getElementById('statsScopeLabel');
+        scopeLabel.textContent = isGlobal ? 'Scope: Global' : 'Scope: Filtered';
+
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+    }
+
+    function createChart(stats) {
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        const labels = stats.map(stat => stat.predicted_weather);
+        const data = stats.map(stat => stat.count);
+        const backgroundColors = stats.map(stat => {
+            if (stat.predicted_weather === 'Sunny') return '#ffc107';
+            if (stat.predicted_weather === 'Rainy') return '#0dcaf0';
+            return '#6c757d';
+        });
+
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Predictions',
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function loadStatsAndTrend() {
+        const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        const userScope = document.getElementById('filterUser').value;
+
+        const params = new URLSearchParams();
+        if (start) params.append('start_date', start);
+        if (end) params.append('end_date', end);
+        if (userScope === 'all') params.append('user_id', 'all');
+
+        fetch('/api/prediction_stats?' + params.toString(), { credentials: 'same-origin' })
+            .then(response => {
+                if (!response.ok) {
+                    document.getElementById('predictionChart').parentElement.innerHTML =
+                        '<p class="text-center text-muted">No statistics available. Make a prediction to populate stats.</p>';
+                    return Promise.resolve({ stats: [] });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.stats && data.stats.length) {
+                    updateStats(data.stats, data.global);
+                    createChart(data.stats);
+                } else {
+                    document.getElementById('predictionChart').parentElement.innerHTML =
+                        '<p class="text-center text-muted">No statistics yet. Make your first prediction!</p>';
+                }
+                return data;
+            })
+            .catch(err => {
+                console.error('Failed to fetch prediction stats:', err);
+                document.getElementById('predictionChart').parentElement.innerHTML =
+                    '<p class="text-center text-muted">Unable to load statistics.</p>';
+            });
+    }
+});
+</script>
+{% endblock %}
